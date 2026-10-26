@@ -220,6 +220,12 @@ Se han realizado comprobaciones manuales durante el desarrollo para verificar la
 
 > **Comprobaciones manuales:** Estas comprobaciones preliminares permitieron verificar el comportamiento básico del servicio en el entorno local antes de implementar la suite de pruebas automatizadas.
 
+<p align="center">
+  <img src="assets/usuarios-registrados-pgadmin.png" alt="Verificación en pgAdmin de los usuarios registrados en PostgreSQL" width="75%">
+  <br>
+  <em>Comprobación en pgAdmin de los usuarios creados y guardados en la base de datos.</em>
+</p>
+
 ## 🧪 Pruebas automatizadas
 
 El proyecto dispone de una suite de pruebas automatizadas diseñada para verificar el correcto funcionamiento de los endpoints, garantizar el cumplimiento de las reglas de negocio y prevenir regresiones.
