@@ -356,6 +356,16 @@ Completar progresivamente las operaciones CRUD sobre la entidad de usuarios:
 
 ## 👩‍💻 Autora
 
+<p align="center">
+  <a href="https://github.com/apariciodiazpatricia-cell" target="_blank">
+    <img src="https://github.com/apariciodiazpatricia-cell.png" width="110" alt="Patricia Aparicio" style="border-radius: 50%;" />
+  </a>
+  <br>
+  <a href="https://github.com/apariciodiazpatricia-cell" target="_blank">
+    <strong>Patricia Aparicio</strong>
+  </a>
+</p>
+
 Proyecto individual de aprendizaje y práctica de desarrollo backend.
 
 **Objetivo:** aprender haciendo, validar cada paso y comprender lo que hay detrás del código.
@@ -366,4 +376,8 @@ Proyecto individual de aprendizaje y práctica de desarrollo backend.
 
 <p align="center">
   <sub>Built with Python · FastAPI · PostgreSQL</sub>
+</p>
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00F5A0,100:0077B6&height=120&section=footer" width="100%" alt="Ondas dinámicas" />
 </p>
