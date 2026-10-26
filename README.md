@@ -113,6 +113,12 @@ api_usuarios/
 - **`models.py`**: representa la tabla `users`.
 - **`schemas.py`**: define los datos esperados y la respuesta de la API.
 
+<p align="center">
+  <img src="./assets/usuarios-registrados-pgadmin.png" alt="Verificación en pgAdmin de los usuarios registrados en PostgreSQL" width="75%">
+  <br>
+  <em>Comprobación en pgAdmin de los usuarios creados y guardados en la base de datos.</em>
+</p>
+
 ## 🚀 Instalación y puesta en marcha
 
 ### 1. Clonar el repositorio
@@ -219,12 +225,6 @@ Se han realizado comprobaciones manuales durante el desarrollo para verificar la
 | Verificación de los registros en pgAdmin | Correcta |
 
 > **Comprobaciones manuales:** Estas comprobaciones preliminares permitieron verificar el comportamiento básico del servicio en el entorno local antes de implementar la suite de pruebas automatizadas.
-
-<p align="center">
-  <img src="assets/usuarios-registrados-pgadmin.png" alt="Verificación en pgAdmin de los usuarios registrados en PostgreSQL" width="75%">
-  <br>
-  <em>Comprobación en pgAdmin de los usuarios creados y guardados en la base de datos.</em>
-</p>
 
 ## 🧪 Pruebas automatizadas
 
