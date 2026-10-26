@@ -97,6 +97,8 @@ api_usuarios/
 │   ├── main.py             # Aplicación FastAPI
 │   ├── models.py           # Modelo User
 │   └── schemas.py          # Esquemas de entrada y salida
+├── assets/
+│   └── banner-api-usuarios.png
 ├── .env                    # Configuración privada local
 ├── .gitignore              # Archivos excluidos de Git
 ├── README.md               # Documentación
