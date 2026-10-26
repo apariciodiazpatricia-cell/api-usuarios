@@ -218,7 +218,100 @@ Se han realizado comprobaciones manuales durante el desarrollo para verificar la
 | Rechazo de un correo duplicado | `409 Conflict` |
 | Verificación de los registros en pgAdmin | Correcta |
 
-> **Estado de los tests:** estas son pruebas manuales y comprobaciones de funcionamiento. Todavía no se ha implementado ni ejecutado una suite de tests automatizados con `pytest`.
+> **Comprobaciones manuales:** Estas comprobaciones preliminares permitieron verificar el comportamiento básico del servicio en el entorno local antes de implementar la suite de pruebas automatizadas.
+
+## 🧪 Pruebas automatizadas
+
+El proyecto dispone de una suite de pruebas automatizadas diseñada para verificar el correcto funcionamiento de los endpoints, garantizar el cumplimiento de las reglas de negocio y prevenir regresiones.
+
+### Herramientas y entorno de pruebas
+
+- **`pytest`**: Framework principal para el descubrimiento, organización y ejecución de pruebas unitarias y de integración.
+- **`pytest-bdd`**: Extensión para implementar pruebas guiadas por comportamiento (*Behavior-Driven Development*), vinculando especificaciones en lenguaje natural con código de prueba en Python.
+- **Gherkin**: Lenguaje estructurado y legible tanto por perfiles técnicos como funcionales para describir escenarios mediante las palabras clave `Feature`, `Scenario`, `Given`, `When`, `Then` y `And`.
+- **`FastAPI TestClient`**: Cliente de pruebas síncrono basado en `httpx` que permite simular peticiones HTTP hacia la aplicación FastAPI sin necesidad de arrancar el servidor Uvicorn.
+- **Aislamiento con SQLite en memoria**: Las pruebas se ejecutan sobre una base de datos SQLite en memoria (`sqlite://`) utilizando un pool de conexión estático (`StaticPool`). Esto asegura una ejecución rápida, aislada y sin riesgo de modificar o requerir la base de datos PostgreSQL de desarrollo.
+
+### Estructura de pruebas
+
+```text
+tests/
+├── conftest.py
+├── test_users.py
+├── test_users_bdd.py
+└── features/
+    └── users.feature
+```
+
+- **`tests/conftest.py`**: Configuración global y fixtures de prueba. Inicializa el motor de base de datos SQLite en memoria y sobreescribe la dependencia `get_db` de FastAPI mediante `app.dependency_overrides`. Proporciona la fixture `client` con `TestClient(app)`, gestionando el ciclo de vida de creación (`Base.metadata.create_all`) y destrucción (`Base.metadata.drop_all`) de tablas para cada caso de prueba.
+- **`tests/test_users.py`**: Pruebas de integración sobre los endpoints de usuarios utilizando `TestClient`. Comprueba la creación de usuarios con datos válidos (código HTTP 201 y payload devuelto) y el control de duplicados (código HTTP 409 y mensaje de conflicto).
+- **`tests/test_users_bdd.py`**: Definiciones de pasos (*step definitions*) que conectan los pasos en lenguaje Gherkin con funciones de Python mediante los decoradores `@given`, `@when` y `@then` de `pytest-bdd`.
+- **`tests/features/users.feature`**: Archivo de especificación en lenguaje natural Gherkin que describe el escenario funcional para la creación correcta de usuarios.
+
+### Casos de prueba implementados
+
+| Caso | Resultado esperado | Estado |
+|---|---|---|
+| Crear un usuario con datos válidos | HTTP 201 Created y datos del usuario | Implementado y validado |
+| Crear un usuario con un correo duplicado | HTTP 409 Conflict | Implementado y validado |
+| Escenario BDD de creación de usuario | Verificación del código HTTP y los datos devueltos | Implementado y validado |
+
+### Ejecución de las pruebas
+
+Para ejecutar la suite completa de pruebas desde la terminal:
+
+```bash
+./.venv/Scripts/python.exe -m pytest tests/ -v
+```
+
+O si el entorno virtual ya se encuentra activo en tu terminal:
+
+```bash
+pytest tests/ -v
+```
+
+#### Resultado de la última ejecución
+
+La última ejecución de la suite confirmó **3 pruebas superadas**:
+
+```text
+tests/test_users.py::test_create_user_returns_201_and_user_data PASSED   [ 33%]
+tests/test_users.py::test_create_user_with_duplicate_email_returns_409 PASSED [ 66%]
+tests/test_users_bdd.py::test_crear_un_usuario_correctamente PASSED      [100%]
+
+============================== 3 passed in 0.14s ==============================
+```
+
+> ⚠️ **Aclaración sobre la ejecución:** Este resultado corresponde a la última ejecución realizada en el entorno local y no garantiza automáticamente que futuras modificaciones en el código continúen superando las pruebas sin una nueva ejecución de verificación.
+
+#### Interpretación del resultado
+
+- **`PASSED`**: Indica que todas las aserciones (`assert`) del caso de prueba se evaluaron como verdaderas y no se produjeron excepciones inesperadas.
+- **Porcentaje de avance (`[33%]`, `[66%]`, `[100%]`):** Refleja el progreso relativo conforme se ejecutan las pruebas recopiladas.
+- **Resumen final (`3 passed in 0.14s`):** Confirma el total de pruebas satisfactorias y el tiempo invertido. Si alguna prueba fallara, `pytest` mostraría `FAILED` con la traza de la discrepancia entre el resultado esperado y el obtenido.
+
+### Especificación BDD con Gherkin
+
+El archivo `tests/features/users.feature` define el comportamiento esperado del sistema en lenguaje natural:
+
+```gherkin
+Feature: Gestión de usuarios
+
+  Scenario: Crear un usuario correctamente
+    Given que la API está disponible
+    When envío los datos de un usuario nuevo
+    Then la respuesta debe tener código 201
+    And la respuesta debe incluir su nombre, correo e identificador
+```
+
+- **`Given que la API está disponible`**: Prepara el cliente de pruebas conectado a la aplicación.
+- **`When envío los datos de un usuario nuevo`**: Envía una petición `POST /users/` con un nombre y un correo electrónico no registrado.
+- **`Then la respuesta debe tener código 201`**: Confirma que el servidor responda con el código HTTP `201 Created`.
+- **`And la respuesta debe incluir su nombre, correo e identificador`**: Valida que el cuerpo JSON de respuesta incluya el nombre, el correo y el identificador entero generado.
+
+Este escenario se conecta con las funciones Python de `tests/test_users_bdd.py` mediante `pytest-bdd` y se ejecuta de manera integrada con el resto de las pruebas.
+
+> **Alcance de la cobertura BDD:** La especificación BDD actual cubre exclusivamente el escenario de creación de usuario. No se asume cobertura BDD para operaciones que todavía no han sido implementadas.
 
 ## 🔐 Buenas prácticas
 
@@ -227,17 +320,33 @@ Se han realizado comprobaciones manuales durante el desarrollo para verificar la
 - Las dependencias están declaradas en `requirements.txt`.
 - La creación de usuarios comprueba la existencia previa del correo.
 - La tabla `users` aplica una restricción de unicidad al correo electrónico.
+- Aislamiento en pruebas: la suite automatizada opera sobre SQLite en memoria para no modificar ni requerir acceso a la base de datos PostgreSQL de la aplicación.
 
-## 🛣️ Estado actual y próximos pasos
+## 🛣️ Estado del proyecto y próximas mejoras
 
-La funcionalidad principal de creación de usuarios está implementada y se ha comprobado manualmente.
+El proyecto se desarrolla bajo un enfoque incremental, distinguiendo claramente la funcionalidad actualmente implementada y validada de las mejoras planificadas.
 
-Posibles mejoras futuras, sin formar parte de la funcionalidad actual:
+### Funcionalidad implementada
 
-- Añadir tests automatizados con `pytest` y `TestClient`.
-- Probar datos inválidos y casos límite.
-- Mejorar la gestión de errores de base de datos.
-- Incorporar migraciones de esquema con Alembic si el proyecto crece.
+- **Endpoint `POST /users/`:** Creación y registro de nuevos usuarios.
+- **Control de unicidad:** Validación previa para impedir la duplicación de correos electrónicos.
+- **Códigos de respuesta HTTP semánticos:**
+  - `201 Created` cuando la creación es correcta.
+  - `409 Conflict` cuando el correo ya está registrado en el sistema.
+- **Esquemas de datos Pydantic:** Validación estricta en la entrada (`UserCreate`) y serialización de salida (`UserResponse`).
+- **Persistencia relacional:** Integración mediante el ORM SQLAlchemy sobre base de datos PostgreSQL.
+- **Pruebas automatizadas y BDD:** Suite con pruebas unitarias, de integración y escenario Gherkin para la creación de usuarios.
+
+### Próximas mejoras previstas (Hoja de ruta)
+
+Completar progresivamente las operaciones CRUD sobre la entidad de usuarios:
+
+1. **Read — Listar usuarios:** `GET /users/` para consultar y paginar la lista completa de usuarios.
+2. **Read — Consultar un usuario por ID:** `GET /users/{id}` para obtener el detalle de un usuario específico, gestionando el código `404 Not Found` en caso de no existir.
+3. **Update — Actualizar un usuario existente:** `PUT /users/{id}` para modificar los datos de un usuario preservando las validaciones de unicidad.
+4. **Delete — Eliminar un usuario:** `DELETE /users/{id}` para dar de baja o eliminar un registro del sistema.
+
+> 📌 **Aclaración sobre la hoja de ruta:** Las operaciones CRUD listadas anteriormente corresponden a **mejoras futuras y no deben presentarse como implementadas**. Cada una de ellas se desarrollará de forma incremental con sus correspondientes validaciones, pruebas automatizadas y escenarios Gherkin cuando proceda, manteniendo la funcionalidad existente y evitando regresiones.
 
 ## 👩‍💻 Autora
 
