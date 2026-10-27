@@ -60,17 +60,19 @@ Más allá de crear un endpoint, este proyecto permite practicar conceptos funda
 
 ```mermaid
 flowchart TD
-    A["📨 Petición POST /users/"] --> B["📋 Validación con Pydantic"]
-    B --> C["🔎 Comprobar correo en PostgreSQL"]
-    C --> D{"¿Existe el correo?"}
-    D -->|Sí| E["⚠️ HTTP 409 Conflict"]
-    D -->|No| F["💾 Guardar usuario"]
-    F --> G["🔄 Recuperar registro creado"]
-    G --> H["✅ HTTP 201 Created"]
+    A["📨 Petición POST /users/ (app/api)"] --> B["📋 Validación con Pydantic (app/schemas)"]
+    B --> C["🎮 Coordinación (app/controllers)"]
+    C --> D["⚙️ Reglas de negocio (app/services)"]
+    D --> E["🔎 Consulta en PostgreSQL (app/database & models)"]
+    E --> F{"¿Existe el correo?"}
+    F -->|Sí| G["⚠️ HTTP 409 Conflict"]
+    F -->|No| H["💾 Persistir en base de datos"]
+    H --> I["🔄 Serialización de salida (app/schemas)"]
+    I --> J["✅ HTTP 201 Created"]
 
     style A fill:#172554,color:#fff,stroke:#60a5fa
-    style E fill:#7f1d1d,color:#fff,stroke:#f87171
-    style H fill:#065f46,color:#fff,stroke:#34d399
+    style G fill:#7f1d1d,color:#fff,stroke:#f87171
+    style J fill:#065f46,color:#fff,stroke:#34d399
 ```
 
 ## 🧰 Tecnologías
@@ -78,40 +80,78 @@ flowchart TD
 | Tecnología | Para qué se utiliza |
 |---|---|
 | Python | Lenguaje principal del proyecto |
-| FastAPI | Creación del endpoint REST |
+| FastAPI | Creación de endpoints y servicios REST |
 | SQLAlchemy | Comunicación con la base de datos mediante ORM |
 | PostgreSQL | Almacenamiento persistente |
-| Psycopg | Controlador de PostgreSQL |
-| Pydantic | Validación de los datos de entrada y salida |
-| python-dotenv | Lectura de variables de entorno |
+| Psycopg | Controlador nativo de PostgreSQL para SQLAlchemy |
+| Pydantic | Validación de los datos de entrada y serialización de salida |
+| pydantic-settings | Configuración centralizada y tipada de variables de entorno |
+| python-dotenv | Lectura de variables desde archivos `.env` |
 | Uvicorn | Servidor de desarrollo ASGI |
 
 ## 🗂️ Arquitectura del proyecto
 
+El proyecto sigue una arquitectura modular en capas (*Layered Architecture*) que promueve una clara separación de responsabilidades, alta cohesión y bajo acoplamiento:
+
 ```text
 api_usuarios/
 ├── app/
-│   ├── api/
-│   │   └── user_routes.py  # Endpoint para crear usuarios
-│   ├── database.py         # Conexión y sesiones de BD
-│   ├── main.py             # Aplicación FastAPI
-│   ├── models.py           # Modelo User
-│   └── schemas.py          # Esquemas de entrada y salida
-├── assets/
-│   └── banner-api-usuarios.png
+│   ├── api/                # Enrutadores y endpoints HTTP (FastAPI)
+│   │   ├── __init__.py
+│   │   ├── test_routes.py  # Rutas de la plantilla base
+│   │   └── user_routes.py  # Endpoints de gestión de usuarios
+│   ├── controllers/        # Controladores para coordinar peticiones y respuestas
+│   │   ├── __init__.py
+│   │   ├── test_controller.py
+│   │   └── user_controller.py
+│   ├── core/               # Configuración global y variables de entorno
+│   │   ├── __init__.py
+│   │   └── config.py
+│   ├── database/           # Conexión, motor y sesiones de base de datos
+│   │   ├── __init__.py
+│   │   └── connection.py
+│   ├── feature_plates/     # Módulos y funcionalidades complementarias
+│   │   └── __init__.py
+│   ├── models/             # Modelos de datos relacionales (SQLAlchemy)
+│   │   ├── __init__.py
+│   │   ├── test_model.py
+│   │   └── user_model.py
+│   ├── schemas/            # Esquemas de validación y serialización (Pydantic)
+│   │   ├── __init__.py
+│   │   ├── test_schema.py
+│   │   └── user_schema.py
+│   ├── services/           # Lógica de negocio y reglas de dominio
+│   │   ├── __init__.py
+│   │   ├── test_service.py
+│   │   └── user_service.py
+│   └── main.py             # Punto de entrada de la aplicación y health checks
+├── assets/                 # Recursos visuales y capturas
+├── tests/                  # Suite de pruebas automatizadas y BDD
+│   ├── conftest.py         # Fixtures y base de datos de prueba aislada
+│   ├── test_users.py       # Pruebas de integración
+│   ├── test_users_bdd.py   # Definición de pasos BDD (pytest-bdd)
+│   └── features/
+│       └── users.feature   # Especificación en lenguaje natural (Gherkin)
 ├── .env                    # Configuración privada local
-├── .gitignore              # Archivos excluidos de Git
-├── README.md               # Documentación
-└── requirements.txt        # Dependencias
+├── .env.example            # Plantilla de variables de entorno
+├── .gitignore              # Archivos excluidos del control de versiones
+├── pytest.ini              # Configuración del descubrimiento de pruebas
+├── README.md               # Documentación completa del proyecto
+└── requirements.txt        # Dependencias del proyecto
 ```
 
 ### 🧩 Separación de responsabilidades
 
-- **`main.py`**: crea la aplicación e incorpora el router.
-- **`api/user_routes.py`**: define el endpoint y su lógica de creación.
-- **`database.py`**: configura SQLAlchemy y las sesiones de base de datos.
-- **`models.py`**: representa la tabla `users`.
-- **`schemas.py`**: define los datos esperados y la respuesta de la API.
+La organización en paquetes asegura que cada componente cumpla un rol bien delimitado:
+
+- **`core/`**: centraliza la configuración del proyecto y la carga de variables de entorno (`Settings`) garantizando tipado estricto.
+- **`database/`**: administra la creación del motor (`engine`), el enlace declarativo (`Base`), las fábricas de sesiones (`SessionLocal`) y el generador de dependencias (`get_db`).
+- **`models/`**: define las entidades mapeadas en tablas de base de datos relacional mediante SQLAlchemy ORM (por ejemplo, `User`).
+- **`schemas/`**: especifica los contratos de datos mediante modelos Pydantic, distinguiendo la validación de entrada (`UserCreate`) de la serialización de salida (`UserResponse`).
+- **`services/`**: alberga la lógica de negocio pura y reglas de dominio (por ejemplo, validación de correos duplicados y persistencia).
+- **`controllers/`**: actúa como mediador entre las peticiones entrantes y los servicios de dominio, desacoplando la lógica de la definición del protocolo HTTP.
+- **`api/`**: expone las rutas REST organizadas mediante `APIRouter`, asignando métodos HTTP, códigos de estado semánticos y esquemas de respuesta.
+- **`main.py`**: instancia la aplicación FastAPI con metadatos descriptivos (`title`, `version`, `description`), registra los enrutadores e implementa endpoints de diagnóstico y salud (`/health/db`).
 
 <p align="center">
   <img src="./assets/usuarios-registrados-pgadmin.png" alt="Verificación en pgAdmin de los usuarios registrados en PostgreSQL" width="75%">
@@ -174,11 +214,15 @@ Cuando el servidor esté funcionando, abre la documentación interactiva:
 
 **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
 
-## 🔌 Endpoint disponible
+## 🔌 Endpoints disponibles
 
-| Método | Ruta | Función |
-|---|---|---|
-| `POST` | `/users/` | Crear un usuario |
+| Método | Ruta | Tag | Función |
+|---|---|---|---|
+| `POST` | `/users/` | `Users` | Crear un nuevo usuario en el sistema |
+| `GET` | `/health/db` | `Health` | Diagnóstico y verificación de conexión con la base de datos |
+| `GET` | `/` | `default` | Mensaje de comprobación de estado de la API |
+| `POST` | `/test/` | `Test` | Registro de entidad de prueba (plantilla base) |
+| `GET` | `/test/` | `Test` | Consulta de entidades de prueba (plantilla base) |
 
 ### Ejemplo de petición
 
@@ -236,6 +280,7 @@ El proyecto dispone de una suite de pruebas automatizadas diseñada para verific
 - **`pytest-bdd`**: Extensión para implementar pruebas guiadas por comportamiento (*Behavior-Driven Development*), vinculando especificaciones en lenguaje natural con código de prueba en Python.
 - **Gherkin**: Lenguaje estructurado y legible tanto por perfiles técnicos como funcionales para describir escenarios mediante las palabras clave `Feature`, `Scenario`, `Given`, `When`, `Then` y `And`.
 - **`FastAPI TestClient`**: Cliente de pruebas síncrono basado en `httpx` que permite simular peticiones HTTP hacia la aplicación FastAPI sin necesidad de arrancar el servidor Uvicorn.
+- **`pytest.ini`**: Archivo de configuración en la raíz que define `testpaths = tests`, asegurando que el runner identifique y ejecute de forma delimitada las pruebas dentro del directorio `tests/`.
 - **Aislamiento con SQLite en memoria**: Las pruebas se ejecutan sobre una base de datos SQLite en memoria (`sqlite://`) utilizando un pool de conexión estático (`StaticPool`). Esto asegura una ejecución rápida, aislada y sin riesgo de modificar o requerir la base de datos PostgreSQL de desarrollo.
 
 ### Estructura de pruebas
@@ -321,12 +366,14 @@ Este escenario se conecta con las funciones Python de `tests/test_users_bdd.py` 
 
 ## 🔐 Buenas prácticas
 
-- Las credenciales se configuran mediante variables de entorno.
-- El archivo `.env` debe permanecer fuera del repositorio.
-- Las dependencias están declaradas en `requirements.txt`.
-- La creación de usuarios comprueba la existencia previa del correo.
-- La tabla `users` aplica una restricción de unicidad al correo electrónico.
+- Las credenciales y configuraciones se administran centralizadamente mediante variables de entorno tipadas (`pydantic-settings` en `core/`).
+- El archivo `.env` permanece fuera del repositorio mediante `.gitignore`.
+- Arquitectura desacoplada en capas: enrutadores (`api`), controladores (`controllers`), reglas de negocio (`services`), persistencia (`models`, `database`) y contratos (`schemas`).
+- Las dependencias se declaran de manera reproducible en `requirements.txt`.
+- La creación de usuarios valida de forma preventiva la unicidad del correo electrónico.
+- La tabla `users` aplica una restricción única a nivel de base de datos (`unique=True`).
 - Aislamiento en pruebas: la suite automatizada opera sobre SQLite en memoria para no modificar ni requerir acceso a la base de datos PostgreSQL de la aplicación.
+- Configuración explícita de testrunner con `pytest.ini` para evitar falsos positivos y delimitación precisa del ámbito de pruebas.
 
 ## 🛣️ Estado del proyecto y próximas mejoras
 
@@ -334,8 +381,10 @@ El proyecto se desarrolla bajo un enfoque incremental, distinguiendo claramente 
 
 ### Funcionalidad implementada
 
-- **Endpoint `POST /users/`:** Creación y registro de nuevos usuarios.
+- **Arquitectura en capas modular:** Separación limpia de responsabilidades en `api/`, `controllers/`, `services/`, `models/`, `schemas/`, `database/` y `core/`.
+- **Endpoint `POST /users/`:** Creación y registro de nuevos usuarios en PostgreSQL.
 - **Control de unicidad:** Validación previa para impedir la duplicación de correos electrónicos.
+- **Endpoints de diagnóstico y estado:** Comprobación de conectividad con la base de datos (`GET /health/db`) y punto de entrada raíz (`GET /`).
 - **Códigos de respuesta HTTP semánticos:**
   - `201 Created` cuando la creación es correcta.
   - `409 Conflict` cuando el correo ya está registrado en el sistema.
